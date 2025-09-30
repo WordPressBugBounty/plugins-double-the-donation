@@ -4,7 +4,7 @@ Plugin Name: Double the Donation
 Plugin URI: https://doublethedonation.com/
 Description: Matching gifts plugin for nonprofits, powered by Double the Donation
 Author: Double the Donation
-Version: 2.0.0
+Version: 3.0.0
 Requires at least: 3.0
 Requires PHP: 5.6.20
 Author URI: https://doublethedonation.com/about-us/
@@ -16,7 +16,7 @@ require_once(ABSPATH . "wp-admin/includes/plugin.php");
 
 function doublethedonation_plugin_setup()
 {
-// defaults for our options
+    // defaults for our options
     add_option('doublethedonation_api_host', 'https://doublethedonation.com');
     add_option('doublethedonation_public_key', '');
     add_option('doublethedonation_cache_version', date('r'));
@@ -48,7 +48,7 @@ function doublethedonation_shortcode($attrs)
 {
     $current_key = get_option('doublethedonation_public_key');
 
-    if ($current_key != 'null') {
+    if ($current_key != 'null' && !empty($current_key)) {
 
         /* If the api key is present, print the following. */
         /* You'll need create some API validation callback.*/
@@ -56,7 +56,10 @@ function doublethedonation_shortcode($attrs)
         wp_enqueue_script("doublethedonation_plugin_js", "https://doublethedonation.com/api/js/ddplugin.js", null, null, true);
         wp_enqueue_style("doublethedonation_plugin_css", "https://doublethedonation.com/api/css/ddplugin.css");
 
-        return '<script>var DDCONF = { API_KEY: "' . $current_key . '" };</script>
+        // Escape the API key for JavaScript context
+        $escaped_key = esc_js($current_key);
+
+        return '<script>var DDCONF = { API_KEY: "' . $escaped_key . '" };</script>
                 <div id="dd-container"></div>';
     } else {
         return "";
@@ -68,7 +71,7 @@ function doublethedonation_volunteer_hub_shortcode($attrs)
 {
     $current_key = get_option('doublethedonation_public_key');
 
-    if ($current_key != 'null') {
+    if ($current_key != 'null' && !empty($current_key)) {
 
         /* If the api key is present, print the following. */
         /* You'll need create some API validation callback.*/
@@ -76,7 +79,10 @@ function doublethedonation_volunteer_hub_shortcode($attrs)
         wp_enqueue_script("doublethedonation_plugin_js", "https://doublethedonation.com/api/js/ddplugin.js", null, null, true);
         wp_enqueue_style("doublethedonation_plugin_css", "https://doublethedonation.com/api/css/ddplugin.css");
 
-        return '<script>var DDCONF = { API_KEY: "' . $current_key . '", VOLUNTEER_GRANT_SPECIFIC: true };</script>
+        // Escape the API key for JavaScript context
+        $escaped_key = esc_js($current_key);
+
+        return '<script>var DDCONF = { API_KEY: "' . $escaped_key . '", VOLUNTEER_GRANT_SPECIFIC: true };</script>
                 <div id="dd-container"></div>';
     } else {
         return "";
@@ -101,184 +107,235 @@ function doublethedonation_create_menu_page()
 
 function register_doublethedonation_settings()
 {
-    register_setting('doublethedonation-settings-group', 'doublethedonation_api_host');
-    register_setting('doublethedonation-settings-group', 'doublethedonation_public_key');
+    register_setting('doublethedonation-settings-group', 'doublethedonation_api_host', 'sanitize_text_field');
+    register_setting('doublethedonation-settings-group', 'doublethedonation_public_key', 'sanitize_text_field');
 }
 
+// Handle key removal with CSRF protection
+add_action('admin_init', 'handle_doublethedonation_key_removal');
+function handle_doublethedonation_key_removal() {
+    if (isset($_POST['doublethedonation_remove_key']) && isset($_POST['_wpnonce'])) {
+        // Verify nonce for CSRF protection
+        if (wp_verify_nonce($_POST['_wpnonce'], 'doublethedonation_remove_key_nonce')) {
+            // Check user capabilities
+            if (current_user_can('manage_options')) {
+                update_option('doublethedonation_public_key', '');
+                update_option('doublethedonation_setup_step', '');
+
+                // Redirect to prevent form resubmission
+                wp_redirect(admin_url('admin.php?page=doublethedonation&key_removed=true'));
+                exit;
+            }
+        } else {
+            wp_die('Security check failed. Please try again.');
+        }
+    }
+}
 
 function doublethedonation_option($value, $label, $selected)
 {
-    $value = htmlspecialchars($value);
-    $label = htmlspecialchars($label);
+    $value = esc_attr($value);
+    $label = esc_html($label);
     $selected = ($selected == $value) ? ' selected ' : NULL;
     echo "<option value=\"{$value}\" {$selected}>{$label}</option>";
 }
 
 function display_doublethedonation_settings()
 {
-    if (isset($_GET["doublethedonation_remove_key"]) && !isset($_GET["settings-updated"])) {
-        update_option('doublethedonation_public_key', '');
-        update_option('doublethedonation_setup_step', '');
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
     }
+
     $current_key = get_option('doublethedonation_public_key');
     $status = "Inactive";
     $activated = false;
     $api_host = get_option('doublethedonation_api_host');
-    if ($current_key) {
-        $get = wp_remote_get("$api_host/api/v1/check_wordpress_key/$current_key");
-        $response_code = wp_remote_retrieve_response_code($get);
-        if ($response_code == 200) {
-            update_option('doublethedonation_public_key', wp_remote_retrieve_body($get));
-            $status = "Activated";
-            $activated = true;
+
+    // Validate API host to prevent SSRF
+    if ($current_key && filter_var($api_host, FILTER_VALIDATE_URL)) {
+        // Ensure the API host is from doublethedonation.com domain
+        $parsed_url = parse_url($api_host);
+        if ($parsed_url && isset($parsed_url['host']) &&
+                (strpos($parsed_url['host'], 'doublethedonation.com') !== false ||
+                        $parsed_url['host'] === 'localhost')) {
+
+            $get = wp_remote_get("$api_host/api/v1/check_wordpress_key/$current_key", array(
+                    'timeout' => 10,
+                    'sslverify' => true
+            ));
+            $response_code = wp_remote_retrieve_response_code($get);
+            if ($response_code == 200) {
+                $validated_key = sanitize_text_field(wp_remote_retrieve_body($get));
+                update_option('doublethedonation_public_key', $validated_key);
+                $status = "Activated";
+                $activated = true;
+            }
         }
+    }
+
+    // Display success message if key was removed
+    if (isset($_GET['key_removed']) && $_GET['key_removed'] == 'true') {
+        echo '<div class="notice notice-success"><p>API key has been removed successfully.</p></div>';
     }
 
     ?>
 
-  <style type="text/css">
-    .doublethedonation-admin {
-      font-size: 16px;
-      line-height: 1.5em;
-    }
+    <style type="text/css">
+        .doublethedonation-admin {
+            font-size: 16px;
+            line-height: 1.5em;
+        }
 
-    .doublethedonation-link {
-      float: left;
-      margin-right: 50px;
-    }
+        .doublethedonation-link {
+            float: left;
+            margin-right: 50px;
+        }
 
-    .doublethedonation-status {
-      clear: both;
-      width: 100%;
-      padding: 10px;
-      text-transform: uppercase;
-      color: white;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-    }
+        .doublethedonation-status {
+            clear: both;
+            width: 100%;
+            padding: 10px;
+            text-transform: uppercase;
+            color: white;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
 
-    p.submit {
-      text-align: center;
-    }
+        p.submit {
+            text-align: center;
+        }
 
-    .doublethedonation-Inactive {
-      background-color: #B3000B;
-    }
+        .doublethedonation-Inactive {
+            background-color: #B3000B;
+        }
 
-    .doublethedonation-Activated {
-      background-color: #6AC228;
-    }
+        .doublethedonation-Activated {
+            background-color: #6AC228;
+        }
 
-    .doublethedonation-input {
-      width: 30%;
-      height: 50px;
-      font-size: 18px;
-    }
+        .doublethedonation-input {
+            width: 30%;
+            height: 50px;
+            font-size: 18px;
+        }
 
-    .doublethedonation-url {
-      font-size: 18px;
-    }
+        .doublethedonation-url {
+            font-size: 18px;
+        }
 
-    .doublethedonation-admin .button-primary {
-      height: 50px;
-      width: 150px;
-      font-size: 18px;
-      text-align: center;
-      margin: auto;
-    }
+        .doublethedonation-admin .button-primary {
+            height: 50px;
+            width: 150px;
+            font-size: 18px;
+            text-align: center;
+            margin: auto;
+        }
 
-    .helptext {
-      margin-top: -10px;
-      color: #777;
-    }
-  </style>
-  <div class="doublethedonation-admin">
-    <h1>Double the Donation Workplace Giving Program Search Tool</h1>
+        .helptext {
+            margin-top: -10px;
+            color: #777;
+        }
+    </style>
+    <div class="doublethedonation-admin">
+        <h1>Double the Donation Workplace Giving Program Search Tool</h1>
 
-    <div class="doublethedonation-status doublethedonation-<?php echo $status ?>"><?php echo $status ?></div>
+        <div class="doublethedonation-status doublethedonation-<?php echo esc_attr($status) ?>"><?php echo esc_html($status) ?></div>
 
-    <form method="post" action="options.php">
-        <?php settings_fields('doublethedonation-settings-group'); ?>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('doublethedonation-settings-group');
 
+            // Add nonce field for additional CSRF protection
+            wp_nonce_field('doublethedonation_settings_update', 'doublethedonation_nonce');
+            ?>
 
-        <?php if (isset($_GET["advanced"])) { ?>
-          <label>API Host:
-            <input class="doublethedonation-input"
-                   type="text"
-                   name="doublethedonation_api_host"
-                   value="<?php echo get_option('doublethedonation_api_host'); ?>"/>
-          </label>
+            <?php if (isset($_GET["advanced"])) { ?>
+                <label>API Host:
+                    <input class="doublethedonation-input"
+                           type="text"
+                           name="doublethedonation_api_host"
+                           value="<?php echo esc_attr(get_option('doublethedonation_api_host')); ?>"/>
+                </label>
+            <?php } else { ?>
+                <input class="doublethedonation-input"
+                       type="hidden"
+                       name="doublethedonation_api_host"
+                       value="<?php echo esc_attr(get_option('doublethedonation_api_host')); ?>"/>
+            <?php } ?>
+
+            <?php if (!$activated) { ?>
+
+                <div style="text-align: center;">
+
+                    <?php if ($current_key && !$activated) { ?>
+
+                        <h2>Hmm... let's try that again</h2>
+
+                        <p>You tried this Double the Donation Public Key: <b><?php echo esc_html($current_key); ?></b></p>
+                        <p>Unfortunately, it didn't work... did you paste in the right key?</p>
+
+                    <?php } ?>
+
+                    <h2>Enter your Double the Donation Public Key:</h2>
+                    <input class="doublethedonation-input" type="text" name="doublethedonation_public_key"/>
+
+                    <?php submit_button("Enter", "primary"); ?>
+
+                    <h3>Don't have a Double the Donation Public Key? <a href="https://doublethedonation.com/pricing/" target="_blank" rel="noopener noreferrer">Sign up for
+                            Double the Donation</a></h3>
+                    <h3>Need help? <a href="https://doublethedonation.com/wordpress-matching-gifts-plugin/" target="_blank" rel="noopener noreferrer">Click
+                            here for instructions.</a></h3>
+                </div>
+
+            <?php } else { ?>
+
+                <div class="text-align: center">
+                    <h3>Double the Donation Public Key: <b><?php echo esc_html(get_option('doublethedonation_public_key')); ?></b>
+                    </h3>
+
+                    <!-- Secure key removal form with CSRF protection -->
+                    <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=doublethedonation')); ?>" style="display: inline;">
+                        <?php wp_nonce_field('doublethedonation_remove_key_nonce'); ?>
+                        <input type="hidden" name="doublethedonation_remove_key" value="1" />
+                        <input type="submit" value="Change Key" class="button-secondary" onclick="return confirm('Are you sure you want to remove the current API key?');" />
+                    </form>
+                </div>
+
+            <?php } ?>
+
+        </form>
+
+        <?php if ($activated) { ?>
+
+            <div style="background: #EEEEEE; padding: 10px;">
+                <div>Next steps to embed the <b>matching gift program</b> search tool:</div>
+                <ol>
+                    <li>Copy this shortcode to your clipboard: <b>[doublethedonation]</b></li>
+                    <li>Navigate to the page or blog post you want the plugin to appear on.</li>
+                    <li>Paste the shortcode where you want the plugin to appear.</li>
+                    <li>View the published page to confirm the search tool is appearing as you wish.</li>
+                </ol>
+            </div>
+
+            <div style="background: #EEEEEE; padding: 10px;">
+                <div>Next steps to embed the <b>company-sponsored volunteer program</b> search tool:</div>
+                <ol>
+                    <li>Copy this shortcode to your clipboard: <b>[doublethedonation_volunteer]</b></li>
+                    <li>Navigate to the page or blog post you want the plugin to appear on.</li>
+                    <li>Paste the shortcode where you want the plugin to appear.</li>
+                    <li>View the published page to confirm the search tool is appearing as you wish.</li>
+                </ol>
+            </div>
+
+            <div>For more detailed instructions and additional configuration settings,
+                <a target="_blank" rel="noopener noreferrer"
+                   href="https://support.doublethedonation.com/knowledge/wordpress-double-the-donation-integration-guide">view our integration guide.</a></div>
+
         <?php } else { ?>
-          <input class="doublethedonation-input"
-                 type="hidden"
-                 name="doublethedonation_api_host"
-                 value="<?php echo get_option('doublethedonation_api_host'); ?>"/>
+
         <?php } ?>
 
-        <?php if (!$activated) { ?>
-
-          <div style="text-align: center;">
-
-              <?php if ($current_key && !$activated) { ?>
-
-                <h2>Hmm... let's try that again</h2>
-
-                <p>You tried this 360MatchPro Public Key: <b><?php echo $current_key; ?></b></p>
-                <p>Unfortunately, it didn't work... did you paste in the right key?</p>
-
-              <?php } ?>
-
-            <h2>Enter your 360MatchPro Public Key:</h2>
-            <input class="doublethedonation-input" type="text" name="doublethedonation_public_key"/>
-
-              <?php submit_button("Enter", "primary"); ?>
-
-            <h3>Don't have a 360MatchPro Public Key? <a href="https://doublethedonation.com/pricing/" target="_blank">Sign up for
-                Double the Donation</a></h3>
-            <h3>Need help? <a href="https://doublethedonation.com/wordpress-matching-gifts-plugin/" target="_blank">Click
-                here for instructions.</a></h3>
-          </div>
-
-        <?php } else { ?>
-
-          <div class="text-align: center">
-            <h3>360MatchPro Public Key: <b><?php echo get_option('doublethedonation_public_key'); ?></b>
-              <a href="admin.php?page=doublethedonation&doublethedonation_remove_key=true">(Change)</a></h3></div>
-
-        <?php } ?>
-
-    </form>
-
-      <?php if ($activated) { ?>
-
-        <div style="background: #EEEEEE; padding: 10px;">
-          <div>Next steps to embed the <b>matching gift program</b> search tool:</div>
-          <ol>
-            <li>Copy this shortcode to your clipboard: <b>[doublethedonation]</b></li>
-            <li>Navigate to the page or blog post you with the plugin to appear on.</li>
-            <li>Paste the shortcode where you want the plugin to appear.</li>
-            <li>View the published page to confirm the search tool is appearing as you wish.</li>
-          </ol>
-        </div>
-
-        <div style="background: #EEEEEE; padding: 10px;">
-          <div>Next steps to embed the <b>company-sponsored volunteer program</b> search tool:</div>
-          <ol>
-            <li>Copy this shortcode to your clipboard: <b>[doublethedonation_volunteer]</b></li>
-            <li>Navigate to the page or blog post you with the plugin to appear on.</li>
-            <li>Paste the shortcode where you want the plugin to appear.</li>
-            <li>View the published page to confirm the search tool is appearing as you wish.</li>
-          </ol>
-        </div>
-
-        <div>For more detailed instructions and additional configuration settings,
-          <a target="_blank"
-             href="https://support.doublethedonation.com/knowledge/wordpress-double-the-donation-integration-guide">view our integration guide.</a></div>
-
-      <?php } else { ?>
-
-      <?php } ?>
-
-  </div>
+    </div>
 <?php } ?>

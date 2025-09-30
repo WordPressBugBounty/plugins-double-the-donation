@@ -1,8 +1,8 @@
 === Double the Donation - A workplace giving tool to help your fundraising efforts ===
 Contributors: kanwei_doublethedonation
 Tags: matching gifts, donation matching, double the donation
-Tested up to: 6.6.1
-Stable tag: 2.0.0
+Tested up to: 6.8.2
+Stable tag: 3.0.0
 Requires at least: 3.0
 Requires PHP: 5.6.20
 License: GPLv2
@@ -11,15 +11,15 @@ Double the Donation – Easily add our matching gifts plugin and volunteering pl
 
 == Description ==
 
-Double the Donation is the leading provider of matching gift software solutions to nonprofit and educational institutions. 360MatchPro by Double the Donation increases revenue from corporate matching gifts while saving staff time. This plugin provides a shortcode that allows you to easily embed the 360MatchPro plugin into your website on a dedicated matching gift page.
+Double the Donation is the leading provider of matching gift software solutions to nonprofit and educational institutions. Double the Donation increases revenue from corporate matching gifts while saving staff time. This plugin provides a shortcode that allows you to easily embed Double the Donation's plugin into your website on a dedicated matching gift page.
 
 ### About Our Plugin:
 
-After getting set-up with your 360MatchPro account and donation form integration, create a dedicated matching gift page on your website to provide your donors with the forms, guidelines, and instructions they need to submit matching gift and volunteer grant requests.
+After getting set-up with your Double the Donation account and donation form integration, create a dedicated matching gift page on your website to provide your donors with the forms, guidelines, and instructions they need to submit matching gift and volunteer grant requests.
 
 Our plugin seamlessly integrates with your WordPress website to instantly connect donors to matching gift and volunteer grant information. [On a dedicated matching gift page](https://support.doublethedonation.com/knowledge/creating-a-dedicated-matching-gift-page), you can explain what matching gift programs are and provide donors with a chance to look up their employer's program forms, guidelines, and instructions. Provide answers to frequently asked questions and your dedicated matching gift page will become a useful resource to include in emails, newsletters, and direct messages.
 
-Our WordPress plugin is serviceware, meaning a paid subscription to 360MatchPro by Double the Donation will be necessary to use our plugin. To find out more about our service, sign up, or get a demo, [visit our website here](https://doublethedonation.com/).
+Our WordPress plugin is serviceware, meaning a paid subscription to Double the Donation will be necessary to use our plugin. To find out more about our service, sign up, or get a demo, [visit our website here](https://doublethedonation.com/).
 
 ### Benefits:
 
@@ -38,7 +38,7 @@ Teach donors about employee matching gifts and reap the financial rewards. Doubl
 Make sure the process is as simple as possible. Give donors all they need to successfully submit a matching gift. Double the Donation makes it easy for donors to submit matching gifts.
 
 **Save Staff Time:**
-Don't miss out on low-hassle donations! Double the Donation's service helps you maximize matching gift revenue by making it easy for your donors to submit their match requests. No need for your staff to follow-up as Double the Donation's 360MatchPro platform takes care of the key next steps.
+Don't miss out on low-hassle donations! Double the Donation's service helps you maximize matching gift revenue by making it easy for your donors to submit their match requests. No need for your staff to follow-up as Double the Donation's platform takes care of the key next steps.
 
 ### About Double the Donation:
 Double the Donation is the leading provider of employee matching gift tools to nonprofits.
@@ -83,7 +83,7 @@ As our plugin is service-ware, usage of it requires a paid subscription, and usa
 
 == Frequently Asked Questions ==
 
-= I don't have a Double the Donation 360MatchPro account. How can I get one?
+= I don't have a Double the Donation account. How can I get one?
 
 Visit [https://doublethedonation.com](https://doublethedonation.com) to explore Double the Donation's service and sign up or get a demo.
 
@@ -93,11 +93,11 @@ Yes many organizations use Double the Donation's plugin in multiple spots includ
 
 = Is Double the Donation's Wordpress Plugin a donation tool?
 
-No, Double the Donation's matching gift plugin is not a donation tool. This plugin allows users who have a 360MatchPro subscription with Double the Donation to put the full search tool on a Wordpress page. Most of the time organizations are using the Double the Donation Wordpress Plugin to put Double the Donation's search tool on a dedicated matching gift page. Additionally, most organizations use a separate donation tool, many of which have integrations with 360MatchPro, so the matching gift information needed by donors is available during the donation process itself.
+No, Double the Donation's matching gift plugin is not a donation tool. This plugin allows users who have a Double the Donation subscription with Double the Donation to put the full search tool on a Wordpress page. Most of the time organizations are using the Double the Donation Wordpress Plugin to put Double the Donation's search tool on a dedicated matching gift page. Additionally, most organizations use a separate donation tool, many of which have integrations with Double the Donation, so the matching gift information needed by donors is available during the donation process itself.
 
 = What's the difference between this Double the Donation Plugin and the “Give - Double the Donation” Plugin?
 
-This Double the Donation Plugin should be used by every organization that uses Wordpress, has an active 360MatchPro subscription or Legacy Plan subscription with Double the Donation, and wants to add Double the Donation's full matching gift plugin onto a dedicated matching gift page or elsewhere on your website. The "Give - Double the Donation Plugin" is an add-on to GiveWP's donation form which allows nonprofit users of GiveWP to integrate Double the Donation's 360MatchPro into your organization's GiveWP donation form.
+This Double the Donation Plugin should be used by every organization that uses Wordpress, has an active Double the Donation subscription or Legacy Plan subscription with Double the Donation, and wants to add Double the Donation's full matching gift plugin onto a dedicated matching gift page or elsewhere on your website. The "Give - Double the Donation Plugin" is an add-on to GiveWP's donation form which allows nonprofit users of GiveWP to integrate Double the Donation into your organization's GiveWP donation form.
 
 = How does Double the Donation identify which companies offer matching gift programs and maintain its database?
 
@@ -106,18 +106,21 @@ Double the Donation maintains the largest, most comprehensive, and most accurate
 Your donors will search for subsidiaries, brand names, and local offices. They will misspell company names. The comprehensive nature of the Double the Donation database ensures that no matter what your donors search, they find the right company. [Learn more about Double the Donation's database here](https://doublethedonation.com/matching-gift-database/).
 
 == Screenshots ==
-1. Install the Double the Donation Plugin and enter in your Double the Donation / 360MatchPro API key
+1. Install the Double the Donation Plugin and enter in your Double the Donation API key
 2. Add the Shortcode wherever you want the full Double the Donation search tool to appear (the most common spot organizations put it is on a dedicated matching gift page or ways-to-give page)
 3. The Double the Donation search tool will appear so donors can easily enter their company and access the matching gift forms and next steps that they need to help your organization grow its matching gift revenue.
 
 == Changelog ==
+
+= 3.0 =
+* Use Wordpress nonce for key removal to prevent CSRF
 
 = 2.0 =
 * Add shortcode for volunteer program plugin
 * Add DTD logo
 
 = 1.1 =
-* Add support for 360MatchPro Keys
+* Add support for Double the Donation Keys
 
 = 1.0 =
 * Initial Release
