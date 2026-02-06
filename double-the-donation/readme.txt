@@ -1,12 +1,13 @@
-=== Double the Donation - A workplace giving tool to help your fundraising efforts ===
+=== Double the Donation - A workplace giving tool ===
 Contributors: kanwei_doublethedonation
 Tags: matching gifts, donation matching, double the donation
-Tested up to: 6.8.2
-Stable tag: 3.0.0
+Tested up to: 6.8
+Stable tag: 3.1.0
 Requires at least: 3.0
 Requires PHP: 5.6.20
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
 Double the Donation – Easily add our matching gifts plugin and volunteering plugin on your site to help your fundraising efforts
 
 == Description ==
@@ -112,6 +113,9 @@ Your donors will search for subsidiaries, brand names, and local offices. They w
 
 == Changelog ==
 
+= 3.1 =
+* Implement more security measures raised by Plugin Check
+
 = 3.0 =
 * Use Wordpress nonce for key removal to prevent CSRF
 
@@ -124,4 +128,3 @@ Your donors will search for subsidiaries, brand names, and local offices. They w
 
 = 1.0 =
 * Initial Release
-

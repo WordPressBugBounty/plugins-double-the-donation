@@ -1,25 +1,28 @@
 <?php
 /*
-Plugin Name: Double the Donation
+Plugin Name: Double the Donation - A workplace giving tool
 Plugin URI: https://doublethedonation.com/
 Description: Matching gifts plugin for nonprofits, powered by Double the Donation
 Author: Double the Donation
-Version: 3.0.0
+Version: 3.1.0
 Requires at least: 3.0
 Requires PHP: 5.6.20
 Author URI: https://doublethedonation.com/about-us/
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: double-the-donation
 */
 
 global $wp_version;
 
-require_once(ABSPATH . "wp-admin/includes/plugin.php");
+require_once(ABSPATH . 'wp-admin/includes/plugin.php');
 
 function doublethedonation_plugin_setup()
 {
     // defaults for our options
     add_option('doublethedonation_api_host', 'https://doublethedonation.com');
     add_option('doublethedonation_public_key', '');
-    add_option('doublethedonation_cache_version', date('r'));
+    add_option('doublethedonation_cache_version', gmdate('r'));
 }
 
 // install our plugin
@@ -34,7 +37,7 @@ function doublethedonation_get_version()
 
 function doublethedonation_bust_cache()
 {
-    update_option('doublethedonation_cache_version', date('r'));
+    update_option('doublethedonation_cache_version', gmdate('r'));
 }
 
 function doublethedonation_simple_fetch($url)
@@ -98,53 +101,48 @@ add_shortcode('doublethedonation_volunteer', 'doublethedonation_volunteer_hub_sh
  */
 
 add_action('admin_menu', 'doublethedonation_create_menu_page');
-add_action('admin_init', 'register_doublethedonation_settings');
+add_action('admin_init', 'doublethedonation_register_settings');
 
 function doublethedonation_create_menu_page()
 {
-    add_menu_page("Double the Donation Admin", "Double the Donation", "manage_options", "doublethedonation", "display_doublethedonation_settings", "data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDEuNiAyNDMuODciPjx0aXRsZT5kdGQtc3F1YXJlLWxvZ288L3RpdGxlPjxnIGlkPSJnMjIiPjxwYXRoIGlkPSJwYXRoMjQiIGQ9Ik0xMjMuMDcsMGM1Ni40NSwwLDEwNCwzNy42OCwxMTguNTMsODktMTQuMzUtNDQuNTUtNTYuODEtNzYuODUtMTA2Ljk0LTc2Ljg1LTYxLjkzLDAtMTEyLjE1LDQ5LjI4LTExMi4xNSwxMTBTNzIuNzMsMjMyLjI5LDEzNC42NiwyMzIuMjljNDguMzIsMCw4OS41MS0zMCwxMDUuMjgtNzIuMDdhMTIzLDEyMywwLDAsMS0xMTYuODcsODMuNjVDNTUuMTEsMjQzLjg3LDAsMTg5LjI2LDAsMTIxLjkzUzU1LjExLDAsMTIzLjA3LDAiIHN0eWxlPSJmaWxsOiM4ZThlOGUiLz48L2c+PGcgaWQ9ImcyNiI+PHBhdGggaWQ9InBhdGgyOCIgZD0iTTEwMy4wNiwxMDMuM2E0NC43LDQ0LjcsMCwwLDEsMTcuNSwzLjU1Yy03LTMzLjM2LS4xNi00Ny4wOCwyOS4zOC02Mi43My0yNSwyMy41My0xLjg0LDY5LjA3LTIsMTAzLjkzdjFoMGE0NC44NCw0NC44NCwwLDEsMS00NC44My00NS44IiBzdHlsZT0iZmlsbDojNGNiNTczIi8+PC9nPjxnIGlkPSJnMzAiPjxwYXRoIGlkPSJwYXRoMzIiIGQ9Ik0xOTMuODcsNDcuNGMtMTQuNTQsOC4yMy0xNi43NSwyOC41LTE1LjYsNTIuNy45LDE3LjY3LDQuMSw0MC42NywwLDUzLjg4LTcsMTkuNTQtMjQuMTMsMzIuMzgtNDEuNDQsMzguMTEsMTAuNzQtOC44LDIzLjQ5LTI0LjE1LDIzLjM3LTQ4LjA4LS4xNi0yMS41OC0zLjk1LTQ3LjM1LS40Ny02NC43MywyLjYtMTMuMzYsMTQtMjMuNzQsMzQuMTQtMzEuODgiIHN0eWxlPSJmaWxsOiM4ZThlOGUiLz48L2c+PC9zdmc+", '100.1338');
+    add_menu_page("Double the Donation Admin", "Double the Donation", "manage_options", "doublethedonation", "doublethedonation_display_settings", "data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDEuNiAyNDMuODciPjx0aXRsZT5kdGQtc3F1YXJlLWxvZ288L3RpdGxlPjxnIGlkPSJnMjIiPjxwYXRoIGlkPSJwYXRoMjQiIGQ9Ik0xMjMuMDcsMGM1Ni40NSwwLDEwNCwzNy42OCwxMTguNTMsODktMTQuMzUtNDQuNTUtNTYuODEtNzYuODUtMTA2Ljk0LTc2Ljg1LTYxLjkzLDAtMTEyLjE1LDQ5LjI4LTExMi4xNSwxMTBTNzIuNzMsMjMyLjI5LDEzNC42NiwyMzIuMjljNDguMzIsMCw4OS41MS0zMCwxMDUuMjgtNzIuMDdhMTIzLDEyMywwLDAsMS0xMTYuODcsODMuNjVDNTUuMTEsMjQzLjg3LDAsMTg5LjI2LDAsMTIxLjkzUzU1LjExLDAsMTIzLjA3LDAiIHN0eWxlPSJmaWxsOiM4ZThlOGUiLz48L2c+PGcgaWQ9ImcyNiI+PHBhdGggaWQ9InBhdGgyOCIgZD0iTTEwMy4wNiwxMDMuM2E0NC43LDQ0LjcsMCwwLDEsMTcuNSwzLjU1Yy03LTMzLjM2LS4xNi00Ny4wOCwyOS4zOC02Mi43My0yNSwyMy41My0xLjg0LDY5LjA3LTIsMTAzLjkzdjFoMGE0NC44NCw0NC44NCwwLDEsMS00NC44My00NS44IiBzdHlsZT0iZmlsbDojNGNiNTczIi8+PC9nPjxnIGlkPSJnMzAiPjxwYXRoIGlkPSJwYXRoMzIiIGQ9Ik0xOTMuODcsNDcuNGMtMTQuNTQsOC4yMy0xNi43NSwyOC41LTE1LjYsNTIuNy45LDE3LjY3LDQuMSw0MC42NywwLDUzLjg4LTcsMTkuNTQtMjQuMTMsMzIuMzgtNDEuNDQsMzguMTEsMTAuNzQtOC44LDIzLjQ5LTI0LjE1LDIzLjM3LTQ4LjA4LS4xNi0yMS41OC0zLjk1LTQ3LjM1LS40Ny02NC43MywyLjYtMTMuMzYsMTQtMjMuNzQsMzQuMTQtMzEuODgiIHN0eWxlPSJmaWxsOiM4ZThlOGUiLz48L2c+PC9zdmc+", '100.1338');
 }
 
-function register_doublethedonation_settings()
+function doublethedonation_register_settings()
 {
     register_setting('doublethedonation-settings-group', 'doublethedonation_api_host', 'sanitize_text_field');
     register_setting('doublethedonation-settings-group', 'doublethedonation_public_key', 'sanitize_text_field');
 }
 
 // Handle key removal with CSRF protection
-add_action('admin_init', 'handle_doublethedonation_key_removal');
-function handle_doublethedonation_key_removal() {
+add_action('admin_init', 'doublethedonation_handle_key_removal');
+function doublethedonation_handle_key_removal() {
     if (isset($_POST['doublethedonation_remove_key']) && isset($_POST['_wpnonce'])) {
+        // Sanitize the nonce before verification
+        $nonce = sanitize_text_field(wp_unslash($_POST['_wpnonce']));
+
         // Verify nonce for CSRF protection
-        if (wp_verify_nonce($_POST['_wpnonce'], 'doublethedonation_remove_key_nonce')) {
+        if (wp_verify_nonce($nonce, 'doublethedonation_remove_key_nonce')) {
             // Check user capabilities
             if (current_user_can('manage_options')) {
                 update_option('doublethedonation_public_key', '');
                 update_option('doublethedonation_setup_step', '');
 
-                // Redirect to prevent form resubmission
-                wp_redirect(admin_url('admin.php?page=doublethedonation&key_removed=true'));
+                // Use safe redirect and exit
+                wp_safe_redirect(admin_url('admin.php?page=doublethedonation&key_removed=true'));
                 exit;
             }
         } else {
-            wp_die('Security check failed. Please try again.');
+            wp_die(esc_html__('Security check failed. Please try again.', 'double-the-donation'));
         }
     }
 }
 
-function doublethedonation_option($value, $label, $selected)
-{
-    $value = esc_attr($value);
-    $label = esc_html($label);
-    $selected = ($selected == $value) ? ' selected ' : NULL;
-    echo "<option value=\"{$value}\" {$selected}>{$label}</option>";
-}
-
-function display_doublethedonation_settings()
+function doublethedonation_display_settings()
 {
     // Check user capabilities
     if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have sufficient permissions to access this page.'));
+        wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'double-the-donation'));
     }
 
     $current_key = get_option('doublethedonation_public_key');
@@ -175,8 +173,15 @@ function display_doublethedonation_settings()
     }
 
     // Display success message if key was removed
-    if (isset($_GET['key_removed']) && $_GET['key_removed'] == 'true') {
-        echo '<div class="notice notice-success"><p>API key has been removed successfully.</p></div>';
+
+    // Securely check for the key_removed notice.
+    if (
+            isset($_GET['key_removed']) &&
+            sanitize_text_field(wp_unslash($_GET['key_removed'])) === 'true' &&
+            isset($_GET['_wpnonce']) &&
+            wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'doublethedonation_key_removed_notice')
+    ) {
+        echo '<div class="notice notice-success"><p>' . esc_html__('API key has been removed successfully.', 'double-the-donation') . '</p></div>';
     }
 
     ?>
